@@ -4,6 +4,8 @@ import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.regex.*;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.*;
 
 public class BatchRename extends javax.swing.JFrame {
@@ -27,11 +29,28 @@ public class BatchRename extends javax.swing.JFrame {
     // HELPER METHODS
     // create file display table
     private void initTable() {
-        tableModel = new DefaultTableModel(new Object[]{"Original", "Updated"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"Original", "Updated"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
         fileTable = new JTable(tableModel);
         filePane.setViewportView(fileTable);
         fileTable.getTableHeader().setReorderingAllowed(false);
         fileTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        
+        fileTable.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // Check if the pressed key is Escape (key code 27)
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    // Clear the selection of the table
+                    fileTable.clearSelection();
+                }
+            }
+        });
     }
     
     // populate file table
@@ -66,11 +85,12 @@ public class BatchRename extends javax.swing.JFrame {
     // save snapshot of files between operations
     private void saveCurrentState() {
         previousFileEntries.add(new ArrayList<>(fileEntries));
+        //System.out.println(previousFileEntries.size());
     }
     
-    // update updated name preview
-    private void updatePreview(String textToInsert, int position, JLabel modifiedLabel) {
-        String currentName = fileEntries.getFirst().getCurrentName();
+    // update name preview
+    private void updateInsertPreview(String textToInsert, int position, JLabel modifiedLabel, int selectedIndex) {
+        String currentName = fileEntries.get(selectedIndex).getCurrentName();
         String newName;
 
         if (currentName.contains(".")) {
@@ -95,6 +115,29 @@ public class BatchRename extends javax.swing.JFrame {
         modifiedLabel.setText("New: " + newName);
     }
     
+    // update name preview
+    private void updateReplacePreview(JTextField inputField, JTextField inputField2, JCheckBox caseCheckbox, FileEntry selectedEntry, JLabel modifiedLabel) {
+        String toReplace = inputField.getText();
+        String replacement = inputField2.getText();
+        boolean caseSensitive = caseCheckbox.isSelected();
+
+        String currentName = selectedEntry.getCurrentName();
+        int extensionIndex = currentName.lastIndexOf('.');
+        String namePart = (extensionIndex != -1) ? currentName.substring(0, extensionIndex) : currentName;
+        String extensionPart = (extensionIndex != -1) ? currentName.substring(extensionIndex) : "";
+
+        // Replace text for preview
+        String updatedName;
+        if (caseSensitive) {
+            updatedName = namePart.replace(toReplace, replacement);
+        } else {
+            updatedName = namePart.replaceAll("(?i)" + Pattern.quote(toReplace), Matcher.quoteReplacement(replacement));
+        }
+
+        modifiedLabel.setText("New: " + updatedName + extensionPart);
+    }
+    
+    // check that new name is valid
     private boolean isValidWindowsFileName(String fileName) {
     // Check for illegal characters in the file name
     String illegalChars = "\\/:*?\"<>|";
@@ -141,11 +184,14 @@ public class BatchRename extends javax.swing.JFrame {
         deleteMenu = new javax.swing.JMenu();
         deleteFrom = new javax.swing.JMenuItem();
         deleteUntil = new javax.swing.JMenuItem();
+        deleteAtPosition = new javax.swing.JMenuItem();
+        replaceMenu = new javax.swing.JMenu();
+        replaceAll = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("BatchRename");
-        setPreferredSize(new java.awt.Dimension(850, 500));
-        setSize(new java.awt.Dimension(850, 500));
+        setPreferredSize(new java.awt.Dimension(850, 600));
+        setSize(new java.awt.Dimension(850, 600));
 
         btnUndo.setText("Undo");
         btnUndo.addActionListener(new java.awt.event.ActionListener() {
@@ -232,7 +278,7 @@ public class BatchRename extends javax.swing.JFrame {
         deleteMenu.setText("Delete");
         deleteMenu.setMinimumSize(new java.awt.Dimension(52, 22));
 
-        deleteFrom.setText("From __ On");
+        deleteFrom.setText("After __");
         deleteFrom.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 deleteFromActionPerformed(evt);
@@ -248,7 +294,27 @@ public class BatchRename extends javax.swing.JFrame {
         });
         deleteMenu.add(deleteUntil);
 
+        deleteAtPosition.setText("At Position");
+        deleteAtPosition.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteAtPositionActionPerformed(evt);
+            }
+        });
+        deleteMenu.add(deleteAtPosition);
+
         menuBar.add(deleteMenu);
+
+        replaceMenu.setText("Replace");
+
+        replaceAll.setText("All");
+        replaceAll.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                replaceAllActionPerformed(evt);
+            }
+        });
+        replaceMenu.add(replaceAll);
+
+        menuBar.add(replaceMenu);
 
         setJMenuBar(menuBar);
 
@@ -259,13 +325,15 @@ public class BatchRename extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                    .addComponent(filePane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 115, Short.MAX_VALUE)
                         .addComponent(btnApply, javax.swing.GroupLayout.PREFERRED_SIZE, 125, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
-                        .addComponent(btnUndo, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(filePane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                        .addComponent(btnUndo, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 116, Short.MAX_VALUE)))
                 .addGap(10, 10, 10))
         );
         layout.setVerticalGroup(
@@ -288,6 +356,7 @@ public class BatchRename extends javax.swing.JFrame {
     private void addFilesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addFilesActionPerformed
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setMultiSelectionEnabled(true);
+        fileChooser.setPreferredSize(new java.awt.Dimension(750, 450));
         int returnValue = fileChooser.showOpenDialog(this);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File[] selectedFiles = fileChooser.getSelectedFiles();
@@ -305,6 +374,7 @@ public class BatchRename extends javax.swing.JFrame {
     private void addFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addFolderActionPerformed
         JFileChooser folderChooser = new JFileChooser();
         folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        folderChooser.setPreferredSize(new java.awt.Dimension(750, 450));
         int returnValue = folderChooser.showOpenDialog(this);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File selectedFolder = folderChooser.getSelectedFile();
@@ -330,6 +400,13 @@ public class BatchRename extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        
+        int selectedIndex = fileTable.getSelectedRow(); // Assuming `fileTable` is your JTable
+        if (selectedIndex == -1) {
+            selectedIndex = 0; // Default to the first entry if nothing is selected
+        }
+
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
 
         // <editor-fold defaultstate="collapsed" desc="Dialog UI">
         JDialog dialog = new JDialog(this, "Add Prefix", true);
@@ -338,7 +415,7 @@ public class BatchRename extends javax.swing.JFrame {
         dialog.setLocationRelativeTo(this);
 
         // create components
-        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
         modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
         modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
         modifiedLabel.setPreferredSize(new Dimension(400, 20));
@@ -364,13 +441,13 @@ public class BatchRename extends javax.swing.JFrame {
 
         dialog.add(inputPanel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
-        // </editor-fold>
+        // </editor-fold> 
 
         // update preview of new file name
         inputField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                modifiedLabel.setText("New: " + inputField.getText() + fileEntries.getFirst().getCurrentName());
+                modifiedLabel.setText("New: " + inputField.getText() + selectedEntry.getCurrentName());
             }
         });
 
@@ -402,6 +479,13 @@ public class BatchRename extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        
+        int selectedIndex = fileTable.getSelectedRow(); // Assuming `fileTable` is your JTable
+        if (selectedIndex == -1) {
+            selectedIndex = 0; // Default to the first entry if nothing is selected
+        }
+
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
 
         // <editor-fold defaultstate="collapsed" desc="Dialog UI">
         JDialog dialog = new JDialog(this, "Add Suffix", true);
@@ -410,7 +494,7 @@ public class BatchRename extends javax.swing.JFrame {
         dialog.setLocationRelativeTo(this);
 
         // create components
-        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
         modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
         modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
         modifiedLabel.setPreferredSize(new Dimension(400, 20));
@@ -442,7 +526,7 @@ public class BatchRename extends javax.swing.JFrame {
         inputField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                String currentName = fileEntries.getFirst().getCurrentName();
+                String currentName = selectedEntry.getCurrentName();
                 if (currentName.contains(".")) {
                     int extensionIndex = currentName.lastIndexOf(".");
                     modifiedLabel.setText("New: " + currentName.substring(0, extensionIndex) + inputField.getText() + currentName.substring(extensionIndex));
@@ -485,6 +569,15 @@ public class BatchRename extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        
+        final int selectedIndex;
+        if (fileTable.getSelectedRow() != -1) {
+            selectedIndex = fileTable.getSelectedRow();
+        } else {
+            selectedIndex = 0;
+        }
+        
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
 
         // <editor-fold defaultstate="collapsed" desc="Dialog UI">
         JDialog dialog = new JDialog(this, "Insert Text At Position", true);
@@ -493,7 +586,7 @@ public class BatchRename extends javax.swing.JFrame {
         dialog.setLocationRelativeTo(this);
 
         // Create components
-        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
         modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
         modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
         modifiedLabel.setPreferredSize(new Dimension(400, 20));
@@ -532,12 +625,12 @@ public class BatchRename extends javax.swing.JFrame {
         inputField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                updatePreview(inputField.getText(), (int)positionSpinner.getValue(), modifiedLabel);
+                updateInsertPreview(inputField.getText(), (int)positionSpinner.getValue(), modifiedLabel, selectedIndex);
             }
         });
 
         positionSpinner.addChangeListener(e -> {
-            updatePreview(inputField.getText(), (int)positionSpinner.getValue(), modifiedLabel);
+            updateInsertPreview(inputField.getText(), (int)positionSpinner.getValue(), modifiedLabel, selectedIndex);
         });
 
         // Apply changes
@@ -592,21 +685,28 @@ public class BatchRename extends javax.swing.JFrame {
             return;
         }
         
+        int selectedIndex = fileTable.getSelectedRow(); // Assuming `fileTable` is your JTable
+        if (selectedIndex == -1) {
+            selectedIndex = 0; // Default to the first entry if nothing is selected
+        }
+
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
+        
         // <editor-fold defaultstate="collapsed" desc="Dialog UI">
-        JDialog dialog = new JDialog(this, "Delete From _ On", true);
+        JDialog dialog = new JDialog(this, "Delete After __", true);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setSize(300, 220);
         dialog.setLocationRelativeTo(this);
 
         // create components
-        JLabel originalLabel = new JLabel("Old: " + fileEntries.getFirst().getCurrentName());
+        JLabel originalLabel = new JLabel("Old: " + selectedEntry.getCurrentName());
         originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
         originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
         originalLabel.setPreferredSize(new Dimension(400, 20));
         originalLabel.setMaximumSize(new Dimension(400, 20));
         originalLabel.setMinimumSize(new Dimension(400, 20));
         
-        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
         modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
         modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
         modifiedLabel.setPreferredSize(new Dimension(400, 20));
@@ -644,7 +744,7 @@ public class BatchRename extends javax.swing.JFrame {
         // Update preview of new file name
         Runnable updatePreview = () -> {
             String currentInput = inputField.getText();
-            String originalName = fileEntries.getFirst().getCurrentName();
+            String originalName = selectedEntry.getCurrentName();
 
             // Separate base name and extension
             int dotIndex = originalName.lastIndexOf('.');
@@ -713,21 +813,28 @@ public class BatchRename extends javax.swing.JFrame {
             return;
         }
         
+        int selectedIndex = fileTable.getSelectedRow(); // Assuming `fileTable` is your JTable
+        if (selectedIndex == -1) {
+            selectedIndex = 0; // Default to the first entry if nothing is selected
+        }
+
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
+        
         // <editor-fold defaultstate="collapsed" desc="Dialog UI">
-        JDialog dialog = new JDialog(this, "Delete Until _", true);
+        JDialog dialog = new JDialog(this, "Delete Until __", true);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setSize(300, 180);
         dialog.setLocationRelativeTo(this);
 
         // create components
-        JLabel originalLabel = new JLabel("Old: " + fileEntries.getFirst().getCurrentName());
+        JLabel originalLabel = new JLabel("Old: " + selectedEntry.getCurrentName());
         originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
         originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
         originalLabel.setPreferredSize(new Dimension(400, 20));
         originalLabel.setMaximumSize(new Dimension(400, 20));
         originalLabel.setMinimumSize(new Dimension(400, 20));
         
-        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
         modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
         modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
         modifiedLabel.setPreferredSize(new Dimension(400, 20));
@@ -761,7 +868,7 @@ public class BatchRename extends javax.swing.JFrame {
             @Override
             public void keyReleased(KeyEvent e) {
                 String currentInput = inputField.getText();
-                String originalName = fileEntries.getFirst().getCurrentName();
+                String originalName = selectedEntry.getCurrentName();
 
                 // Separate base name and extension
                 int dotIndex = originalName.lastIndexOf('.');
@@ -812,6 +919,13 @@ public class BatchRename extends javax.swing.JFrame {
     }//GEN-LAST:event_deleteUntilActionPerformed
 
     private void btnApplyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnApplyActionPerformed
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files to Apply.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        int successfulRenameCount = 0;
+        int failedRenameCount = 0;
         for (FileEntry entry : fileEntries) {
             String newName = entry.getCurrentName();
 
@@ -819,18 +933,22 @@ public class BatchRename extends javax.swing.JFrame {
                 File file = new File(entry.getFilePath());
                 File newFile = new File(file.getParent(), newName);
 
-                // Rename the file
                 if (file.renameTo(newFile)) {
-                    System.out.println("Renamed file: " + file.getName() + " to " + newFile.getName());
+                    successfulRenameCount++;
                 } else {
-                    // If renaming fails, show an error message
-                    JOptionPane.showMessageDialog(this, "Failed to rename file: " + file.getName(), "Error", JOptionPane.ERROR_MESSAGE);
+                    failedRenameCount++;
                 }
-            } else {
-                // If the name is not valid, show a warning message
-                JOptionPane.showMessageDialog(this, "Invalid file name: " + newName, "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+        
+        if (successfulRenameCount > 0) {
+            JOptionPane.showMessageDialog(this, "Successfully renamed " + successfulRenameCount + " files.", "Renaming Complete", JOptionPane.INFORMATION_MESSAGE);
+        }
+        
+        if (failedRenameCount > 0) {
+            JOptionPane.showMessageDialog(this, "Failed to rename " + failedRenameCount + " files.", "Renaming Error", JOptionPane.ERROR_MESSAGE);
+        }
+        
     }//GEN-LAST:event_btnApplyActionPerformed
 
     private void btnUndoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUndoActionPerformed
@@ -848,11 +966,273 @@ public class BatchRename extends javax.swing.JFrame {
     }//GEN-LAST:event_btnUndoActionPerformed
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
-        saveCurrentState();
-        fileEntries.clear();
-        operationHistory.clear();
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files to Remove.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        int[] selectedRows = fileTable.getSelectedRows();
+
+        if (selectedRows.length > 0) {
+            saveCurrentState();
+            operationHistory.add(0);
+            for (int i = selectedRows.length - 1; i >= 0; i--) {
+                fileEntries.remove(selectedRows[i]);
+            }
+        } else {
+            int confirmation = JOptionPane.showConfirmDialog(this, "No rows selected. Clear all entries?", "Confirm Clear", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirmation == JOptionPane.YES_OPTION) {
+                saveCurrentState();
+                operationHistory.add(0);
+                fileEntries.clear();
+            }
+        }
+
         updateTable();
     }//GEN-LAST:event_btnClearActionPerformed
+
+    private void replaceAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_replaceAllActionPerformed
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        final int selectedIndex;
+        if (fileTable.getSelectedRow() != -1) {
+            selectedIndex = fileTable.getSelectedRow();
+        } else {
+            selectedIndex = 0;
+        }
+        
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
+        
+        // <editor-fold defaultstate="collapsed" desc="Dialog UI">
+        JDialog dialog = new JDialog(this, "Replace All", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(450, 290);
+        dialog.setLocationRelativeTo(this);
+
+        // create components
+        JLabel originalLabel = new JLabel("Old: " + selectedEntry.getCurrentName());
+        originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
+        originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        originalLabel.setPreferredSize(new Dimension(400, 20));
+        originalLabel.setMaximumSize(new Dimension(400, 20));
+        originalLabel.setMinimumSize(new Dimension(400, 20));
+        
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
+        modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
+        modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        modifiedLabel.setPreferredSize(new Dimension(400, 20));
+        modifiedLabel.setMaximumSize(new Dimension(400, 20));
+        modifiedLabel.setMinimumSize(new Dimension(400, 20));
+        
+        JLabel infoLabel1 = new JLabel("Replace: ");
+        JLabel infoLabel2 = new JLabel("With: ");
+
+        JTextField inputField = new JTextField();
+        inputField.setMaximumSize(new Dimension(Integer.MAX_VALUE, inputField.getPreferredSize().height));
+        JTextField inputField2 = new JTextField();
+        inputField2.setMaximumSize(new Dimension(Integer.MAX_VALUE, inputField2.getPreferredSize().height));
+        
+        JCheckBox caseCheckbox = new JCheckBox("Case sensitive");
+        caseCheckbox.setSelected(false);
+
+        JButton btnAdd = new JButton("Add");
+        JButton btnCancel = new JButton("Cancel");
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(originalLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(modifiedLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(infoLabel1);
+        inputPanel.add(inputField);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(infoLabel2);
+        inputPanel.add(inputField2);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(caseCheckbox);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        // </editor-fold>
+        
+        inputField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                updateReplacePreview(inputField, inputField2, caseCheckbox, selectedEntry, modifiedLabel);
+            }
+        });
+
+        inputField2.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                updateReplacePreview(inputField, inputField2, caseCheckbox, selectedEntry, modifiedLabel);
+            }
+        });
+
+        caseCheckbox.addActionListener(e -> updateReplacePreview(inputField, inputField2, caseCheckbox, selectedEntry, modifiedLabel));
+
+        btnAdd.addActionListener(e -> {
+            String toReplace = inputField.getText();
+            String replacement = inputField2.getText();
+            boolean caseSensitive = caseCheckbox.isSelected();
+
+            if (toReplace.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Replacement text cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            saveCurrentState();
+            for (FileEntry entry : fileEntries) {
+                String currentName = entry.getCurrentName();
+                int extensionIndex = currentName.lastIndexOf('.');
+                String namePart = (extensionIndex != -1) ? currentName.substring(0, extensionIndex) : currentName;
+                String extensionPart = (extensionIndex != -1) ? currentName.substring(extensionIndex) : "";
+
+                // Replace text based on case sensitivity
+                String updatedName;
+                if (caseSensitive) {
+                    updatedName = namePart.replace(toReplace, replacement);
+                } else {
+                    updatedName = namePart.replaceAll("(?i)" + Pattern.quote(toReplace), Matcher.quoteReplacement(replacement));
+                }
+
+                entry.setCurrentName(updatedName + extensionPart);
+            }
+
+            dialog.dispose();
+            updateTable();
+            operationHistory.add(1);
+        });
+        
+        btnCancel.addActionListener(e -> dialog.dispose());
+        
+        dialog.setVisible(true);
+    }//GEN-LAST:event_replaceAllActionPerformed
+
+    private void deleteAtPositionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteAtPositionActionPerformed
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        final int selectedIndex;
+        if (fileTable.getSelectedRow() != -1) {
+            selectedIndex = fileTable.getSelectedRow();
+        } else {
+            selectedIndex = 0;  // Fallback to the first entry if no row is selected
+        }
+
+        FileEntry selectedEntry = fileEntries.get(selectedIndex);
+
+        // <editor-fold defaultstate="collapsed" desc="Dialog UI">
+        JDialog dialog = new JDialog(this, "Delete Range", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(450, 250);
+        dialog.setLocationRelativeTo(this);
+
+        // Create components
+        JLabel originalLabel = new JLabel("Old: " + selectedEntry.getCurrentName());
+        originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
+        originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JLabel modifiedLabel = new JLabel("New: " + selectedEntry.getCurrentName());
+        modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
+        modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JLabel startLabel = new JLabel("Start Position:");
+        JLabel endLabel = new JLabel("End Position:");
+
+        JSpinner startSpinner = new JSpinner(new SpinnerNumberModel(0, 0, selectedEntry.getCurrentName().length(), 1));
+        JSpinner endSpinner = new JSpinner(new SpinnerNumberModel(0, 0, selectedEntry.getCurrentName().length(), 1));
+
+        JButton btnApply = new JButton("Apply");
+        JButton btnCancel = new JButton("Cancel");
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(originalLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(modifiedLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(startLabel);
+        inputPanel.add(startSpinner);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(endLabel);
+        inputPanel.add(endSpinner);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(btnApply);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        // </editor-fold>
+
+        // Update preview dynamically
+        ChangeListener previewUpdater = e -> {
+            int start = (Integer) startSpinner.getValue();
+            int end = (Integer) endSpinner.getValue();
+            String currentName = selectedEntry.getCurrentName();
+
+            // Split into base name and extension
+            int extensionIndex = currentName.lastIndexOf('.');
+            String baseName = (extensionIndex != -1) ? currentName.substring(0, extensionIndex) : currentName;
+            String extension = (extensionIndex != -1) ? currentName.substring(extensionIndex) : "";
+
+            if (start < 0 || end > baseName.length() || start >= end) {
+                modifiedLabel.setText("New: Invalid Range");
+            } else {
+                String updatedName = baseName.substring(0, start) + baseName.substring(end);
+                modifiedLabel.setText("New: " + updatedName + extension);  // Reattach the extension
+            }
+        };
+
+        startSpinner.addChangeListener(previewUpdater);
+        endSpinner.addChangeListener(previewUpdater);
+
+        btnApply.addActionListener(e -> {
+            int start = (Integer) startSpinner.getValue();
+            int end = (Integer) endSpinner.getValue();
+
+            // Iterate through all file entries and apply the deletion to each file
+            for (FileEntry entry : fileEntries) {
+                String currentName = entry.getCurrentName();
+
+                // Split into base name and extension
+                int extensionIndex = currentName.lastIndexOf('.');
+                String baseName = (extensionIndex != -1) ? currentName.substring(0, extensionIndex) : currentName;
+                String extension = (extensionIndex != -1) ? currentName.substring(extensionIndex) : "";
+
+                if (start < 0 || end > baseName.length() || start >= end) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid range specified.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Apply the deletion to the base name and reattach the extension
+                String updatedName = baseName.substring(0, start) + baseName.substring(end);
+                entry.setCurrentName(updatedName + extension);  // Set the updated name with extension
+            }
+
+            saveCurrentState();
+            dialog.dispose();
+            updateTable();
+            operationHistory.add(1);
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        dialog.setVisible(true);
+    }//GEN-LAST:event_deleteAtPositionActionPerformed
 
     // <editor-fold defaultstate="collapsed" desc="main + var declarations">
     public static void main(String args[]) {
@@ -885,6 +1265,7 @@ public class BatchRename extends javax.swing.JFrame {
     private javax.swing.JButton btnApply;
     private javax.swing.JButton btnClear;
     private javax.swing.JButton btnUndo;
+    private javax.swing.JMenuItem deleteAtPosition;
     private javax.swing.JMenuItem deleteFrom;
     private javax.swing.JMenu deleteMenu;
     private javax.swing.JMenuItem deleteUntil;
@@ -896,6 +1277,8 @@ public class BatchRename extends javax.swing.JFrame {
     private javax.swing.JMenuItem insertPrefix;
     private javax.swing.JMenuItem insertSuffix;
     private javax.swing.JMenuBar menuBar;
+    private javax.swing.JMenuItem replaceAll;
+    private javax.swing.JMenu replaceMenu;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>
 }
