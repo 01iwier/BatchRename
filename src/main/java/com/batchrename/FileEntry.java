@@ -1,5 +1,5 @@
 package com.batchrename;
-import java.util.ArrayList;
+import java.util.*;
 
 public class FileEntry {
     private String originalName;

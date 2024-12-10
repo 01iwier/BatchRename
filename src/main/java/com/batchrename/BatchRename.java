@@ -95,6 +95,31 @@ public class BatchRename extends javax.swing.JFrame {
         modifiedLabel.setText("New: " + newName);
     }
     
+    private boolean isValidWindowsFileName(String fileName) {
+    // Check for illegal characters in the file name
+    String illegalChars = "\\/:*?\"<>|";
+    for (char c : illegalChars.toCharArray()) {
+        if (fileName.indexOf(c) != -1) {
+            return false;
+        }
+    }
+
+    // Check for reserved names
+    String[] reservedNames = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"};
+    for (String reservedName : reservedNames) {
+        if (fileName.equalsIgnoreCase(reservedName)) {
+            return false;
+        }
+    }
+
+    // Ensure the file name is not too long (max 255 characters)
+    if (fileName.length() > 255) {
+        return false;
+    }
+
+    return true;
+}
+    
     // INIT UI
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -232,18 +257,16 @@ public class BatchRename extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(filePane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnApply, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(btnApply, javax.swing.GroupLayout.PREFERRED_SIZE, 125, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
                         .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnUndo, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                        .addGap(18, 18, 18)
+                        .addComponent(btnUndo, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(filePane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addGap(10, 10, 10))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -367,6 +390,7 @@ public class BatchRename extends javax.swing.JFrame {
             }
         });
 
+        // dispose of dialog
         btnCancel.addActionListener(e -> dialog.dispose());
 
         // display dialog
@@ -563,15 +587,250 @@ public class BatchRename extends javax.swing.JFrame {
     }//GEN-LAST:event_insertAtPositionActionPerformed
 
     private void deleteFromActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteFromActionPerformed
-        // TODO add your handling code here:
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // <editor-fold defaultstate="collapsed" desc="Dialog UI">
+        JDialog dialog = new JDialog(this, "Delete From _ On", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(300, 220);
+        dialog.setLocationRelativeTo(this);
+
+        // create components
+        JLabel originalLabel = new JLabel("Old: " + fileEntries.getFirst().getCurrentName());
+        originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
+        originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        originalLabel.setPreferredSize(new Dimension(400, 20));
+        originalLabel.setMaximumSize(new Dimension(400, 20));
+        originalLabel.setMinimumSize(new Dimension(400, 20));
+        
+        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
+        modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        modifiedLabel.setPreferredSize(new Dimension(400, 20));
+        modifiedLabel.setMaximumSize(new Dimension(400, 20));
+        modifiedLabel.setMinimumSize(new Dimension(400, 20));
+
+        JTextField inputField = new JTextField();
+        inputField.setMaximumSize(new Dimension(Integer.MAX_VALUE, inputField.getPreferredSize().height));
+        
+        JCheckBox occurrenceCheckbox = new JCheckBox("Delete from last occurrence");
+        occurrenceCheckbox.setSelected(false); // Default: Delete from first occurrence
+
+        JButton btnAdd = new JButton("Add");
+        JButton btnCancel = new JButton("Cancel");
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(originalLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(modifiedLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(inputField);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(occurrenceCheckbox);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        // </editor-fold>
+        
+        // Update preview of new file name
+        Runnable updatePreview = () -> {
+            String currentInput = inputField.getText();
+            String originalName = fileEntries.getFirst().getCurrentName();
+
+            // Separate base name and extension
+            int dotIndex = originalName.lastIndexOf('.');
+            String baseName = (dotIndex != -1) ? originalName.substring(0, dotIndex) : originalName;
+            String extension = (dotIndex != -1) ? originalName.substring(dotIndex) : "";
+
+            // Determine whether to delete from first or last occurrence
+            if (!currentInput.isEmpty() && baseName.contains(currentInput)) {
+                int deletionIndex = occurrenceCheckbox.isSelected()
+                        ? baseName.lastIndexOf(currentInput) // Last occurrence
+                        : baseName.indexOf(currentInput);   // First occurrence
+                modifiedLabel.setText("New: " + baseName.substring(0, deletionIndex) + extension);
+            } else {
+                modifiedLabel.setText("New: " + originalName);
+            }
+        };
+        
+        // update preview of new file name
+        inputField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                updatePreview.run();
+            }
+        });
+        
+        // save copy and apply prefix
+        btnAdd.addActionListener(e -> {
+            String inputText = inputField.getText();
+            if (inputText.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Input cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            saveCurrentState();
+
+            for (FileEntry entry : fileEntries) {
+                String originalName = entry.getCurrentName();
+
+                int dotIndex = originalName.lastIndexOf('.');
+                String baseName = (dotIndex != -1) ? originalName.substring(0, dotIndex) : originalName;
+                String extension = (dotIndex != -1) ? originalName.substring(dotIndex) : "";
+
+                if (baseName.contains(inputText)) {
+                    int deletionIndex = occurrenceCheckbox.isSelected() ? baseName.lastIndexOf(inputText) : baseName.indexOf(inputText);
+                    baseName = baseName.substring(0, deletionIndex);
+                }
+                entry.setCurrentName(baseName + extension);
+            }
+            dialog.dispose();
+            updateTable();
+            operationHistory.add(1);
+        });
+        
+        // update label on checkbox interaction
+        occurrenceCheckbox.addItemListener(e -> updatePreview.run());
+
+        // dispose of dialog
+        btnCancel.addActionListener(e -> dialog.dispose());
+        
+        dialog.setVisible(true);
     }//GEN-LAST:event_deleteFromActionPerformed
 
     private void deleteUntilActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteUntilActionPerformed
-        // TODO add your handling code here:
+        if (fileEntries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Files Added.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // <editor-fold defaultstate="collapsed" desc="Dialog UI">
+        JDialog dialog = new JDialog(this, "Delete Until _", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(300, 180);
+        dialog.setLocationRelativeTo(this);
+
+        // create components
+        JLabel originalLabel = new JLabel("Old: " + fileEntries.getFirst().getCurrentName());
+        originalLabel.setFont(new Font(originalLabel.getFont().getName(), originalLabel.getFont().getStyle(), 14));
+        originalLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        originalLabel.setPreferredSize(new Dimension(400, 20));
+        originalLabel.setMaximumSize(new Dimension(400, 20));
+        originalLabel.setMinimumSize(new Dimension(400, 20));
+        
+        JLabel modifiedLabel = new JLabel("New: " + fileEntries.getFirst().getCurrentName());
+        modifiedLabel.setFont(new Font(modifiedLabel.getFont().getName(), modifiedLabel.getFont().getStyle(), 14));
+        modifiedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        modifiedLabel.setPreferredSize(new Dimension(400, 20));
+        modifiedLabel.setMaximumSize(new Dimension(400, 20));
+        modifiedLabel.setMinimumSize(new Dimension(400, 20));
+
+        JTextField inputField = new JTextField();
+        inputField.setMaximumSize(new Dimension(Integer.MAX_VALUE, inputField.getPreferredSize().height));
+
+        JButton btnAdd = new JButton("Add");
+        JButton btnCancel = new JButton("Cancel");
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(originalLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(modifiedLabel);
+        inputPanel.add(Box.createVerticalStrut(10));
+        inputPanel.add(inputField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        // </editor-fold>
+        
+        inputField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String currentInput = inputField.getText();
+                String originalName = fileEntries.getFirst().getCurrentName();
+
+                // Separate base name and extension
+                int dotIndex = originalName.lastIndexOf('.');
+                String baseName = (dotIndex != -1) ? originalName.substring(0, dotIndex) : originalName;
+                String extension = (dotIndex != -1) ? originalName.substring(dotIndex) : "";
+
+                // Update preview
+                if (!currentInput.isEmpty() && baseName.contains(currentInput)) {
+                    int deletionIndex = baseName.indexOf(currentInput); // First occurrence
+                    modifiedLabel.setText("New: " + baseName.substring(deletionIndex) + extension);
+                } else {
+                    modifiedLabel.setText("New: " + originalName); // Reset if input not found
+                }
+            }
+        });
+        
+        btnAdd.addActionListener(e -> {
+            String currentInput = inputField.getText();
+            
+            if (!currentInput.isEmpty()) {
+                saveCurrentState();
+                for (FileEntry entry : fileEntries) {
+                    String originalName = entry.getCurrentName();
+
+                    // Separate base name and extension
+                    int dotIndex = originalName.lastIndexOf('.');
+                    String baseName = (dotIndex != -1) ? originalName.substring(0, dotIndex) : originalName;
+                    String extension = (dotIndex != -1) ? originalName.substring(dotIndex) : "";
+
+                    // Apply deletion logic
+                    if (baseName.contains(currentInput)) {
+                        int deletionIndex = baseName.indexOf(currentInput); // First occurrence
+                        entry.setCurrentName(baseName.substring(deletionIndex) + extension);
+                    }
+                }
+                dialog.dispose();
+                updateTable();
+                operationHistory.add(1);
+            } else {
+                JOptionPane.showMessageDialog(dialog, "Text cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        // dispose of dialog
+        btnCancel.addActionListener(e -> dialog.dispose());
+        
+        dialog.setVisible(true);
     }//GEN-LAST:event_deleteUntilActionPerformed
 
     private void btnApplyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnApplyActionPerformed
-        // TODO add your handling code here:
+        for (FileEntry entry : fileEntries) {
+            String newName = entry.getCurrentName();
+
+            if (isValidWindowsFileName(newName)) {
+                File file = new File(entry.getFilePath());
+                File newFile = new File(file.getParent(), newName);
+
+                // Rename the file
+                if (file.renameTo(newFile)) {
+                    System.out.println("Renamed file: " + file.getName() + " to " + newFile.getName());
+                } else {
+                    // If renaming fails, show an error message
+                    JOptionPane.showMessageDialog(this, "Failed to rename file: " + file.getName(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                // If the name is not valid, show a warning message
+                JOptionPane.showMessageDialog(this, "Invalid file name: " + newName, "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }//GEN-LAST:event_btnApplyActionPerformed
 
     private void btnUndoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUndoActionPerformed
