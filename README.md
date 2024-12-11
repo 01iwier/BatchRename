@@ -6,19 +6,20 @@
 - Download BatchRename.exe and run
 
 **Features:**
-Batch File Renaming:
+
+**Batch File Renaming:**
 - Add prefixes or suffixes.
 - Replace text with optional case sensitivity.
 - Delete specific ranges in filenames.
 
-Selection Handling:
+**Selection Handling:**
 - Apply operations to selected files or all files.
 - Easily clear or reset selections.
 
-Undo Support:
+**Undo Support:**
 - Revert changes to a previous state.
 
-Validation:
+**Validation:**
 - Ensures filenames are valid for Windows file systems.
 
 **Demo:**
