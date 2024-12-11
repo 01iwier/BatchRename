@@ -10,11 +10,14 @@ Batch File Renaming:
 - Add prefixes or suffixes.
 - Replace text with optional case sensitivity.
 - Delete specific ranges in filenames.
+
 Selection Handling:
 - Apply operations to selected files or all files.
 - Easily clear or reset selections.
+
 Undo Support:
 - Revert changes to a previous state.
+
 Validation:
 - Ensures filenames are valid for Windows file systems.
 
