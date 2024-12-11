@@ -7,7 +7,7 @@
 
 **Features:**
 
-Batch File Renaming:
+Renaming:
 - Add prefixes or suffixes.
 - Replace text with optional case sensitivity.
 - Delete specific ranges in filenames.
