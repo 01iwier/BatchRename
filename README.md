@@ -1,7 +1,4 @@
-
-╔╗ ┌─┐┌┬┐┌─┐┬ ┬  ╦═╗┌─┐┌┐┌┌─┐┌┬┐┌─┐
-╠╩╗├─┤ │ │  ├─┤  ╠╦╝├┤ │││├─┤│││├┤ 
-╚═╝┴ ┴ ┴ └─┘┴ ┴  ╩╚═└─┘┘└┘┴ ┴┴ ┴└─┘
+<h1>**BatchRename**</h1>
 
 **Batch file renaming application written in Java.**
 
