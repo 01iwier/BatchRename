@@ -3,7 +3,7 @@
 
 A Java-based desktop application for batch renaming files with powerful customization options. This tool allows users to perform operations like adding prefixes, replacing text, deleting specific ranges, and more, with real-time previews. It ensures filenames adhere to filesystem constraints and supports undo functionality for error recovery.
 
-![](https://github.com/user-attachments/assets/a805b0d6-3c66-4119-8092-3398c7772461.png | width=100)
+<img src="https://github.com/user-attachments/assets/a805b0d6-3c66-4119-8092-3398c7772461" width="650">
 
 ## Installation
 Download BatchRename.exe and execute
