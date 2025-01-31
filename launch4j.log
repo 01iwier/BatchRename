@@ -1,0 +1,22 @@
+
+
+Version:	3.50
+CmdLine:	C:\Users\Wieck\Downloads\BatchRename.exe --l4j-debug
+JNI:		No
+WOW64:		Yes
+Working dir:	C:\Users\Wieck\Downloads\.
+Requires JDK:	No
+Requires 64-Bit: No
+Java min ver:	
+Java max ver:	
+Substitute:	JAVA_HOME = 
+Substitute:	PATH = C:\Program Files\Common Files\Oracle\Java\javapath;E:\Oculus\Support\oculus-runtime;E:\OpenJDK\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\nodejs\;C:\ProgramData\chocolatey\bin;E:\Git\cmd;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Users\Wieck\Documents\apache-maven-3.9.9\bin;;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Users\Wieck\.console-ninja\.bin;C:\Users\Wieck\AppData\Local\Microsoft\WindowsApps;E:\Microsoft VS Code\bin;C:\Users\Wieck\AppData\Roaming\npm;C:\Users\Wieck\AppData\Local\Muse Hub\lib;C:\Users\Wieck\.dotnet\tools;E:\OpenJDK\bin
+JRE paths:	;C:\Program Files\Common Files\Oracle\Java\javapath;E:\Oculus\Support\oculus-runtime;E:\OpenJDK\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\nodejs\;C:\ProgramData\chocolatey\bin;E:\Git\cmd;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Users\Wieck\Documents\apache-maven-3.9.9\bin;;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Users\Wieck\.console-ninja\.bin;C:\Users\Wieck\AppData\Local\Microsoft\WindowsApps;E:\Microsoft VS Code\bin;C:\Users\Wieck\AppData\Roaming\npm;C:\Users\Wieck\AppData\Local\Muse Hub\lib;C:\Users\Wieck\.dotnet\tools;E:\OpenJDK\bin
+Check launcher:	C:\Program Files\Common Files\Oracle\Java\javapath\bin\javaw.exe (not found)
+Check launcher:	E:\Oculus\Support\oculus-runtime\bin\javaw.exe (not found)
+Check launcher:	E:\OpenJDK\bin\javaw.exe (OK)
+Version string: 1.021.000_003 / 64-Bit (OK)
+Launcher:	E:\OpenJDK\bin\javaw.exe
+Launcher args:	-jar "C:\Users\Wieck\Downloads\BatchRename.exe"
+Args length:	47/32768 chars
+Exit code:	0
