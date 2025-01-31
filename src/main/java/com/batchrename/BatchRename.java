@@ -162,7 +162,19 @@ public class BatchRename extends javax.swing.JFrame {
 
     return true;
 }
-    
+
+    // TESTING HELPER METHODS
+    // add temporary files for testing
+    public void addFiles(String originalName, String filepath) {
+        fileEntries.add(new FileEntry(originalName, filepath));
+    }
+
+    // get file entries
+    public ArrayList<FileEntry> getFileEntries() {
+        return fileEntries;
+    }
+
+
     // INIT UI
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
